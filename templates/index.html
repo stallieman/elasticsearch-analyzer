@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>ES-export</title>
+</head>
+<body>
+  <h1>Elasticsearch CSV-export</h1>
+  <form action="/export" method="post">
+    <label for="cluster">Cluster:</label>
+    <select name="cluster" id="cluster" required>
+      {% for key, url in clusters.items() %}
+      <option value="{{ key }}">{{ key }}</option>
+      {% endfor %}
+    </select>
+    <br><br>
+
+    <label for="index_pat">Index-patroon:</label>
+    <input type="text" id="index_pat" name="index_pat"
+           value="{{ default_index }}" required>
+    <br><br>
+
+    <label for="field_name">Veldnaam:</label>
+    <input type="text" id="field_name" name="field_name" required>
+    <br><br>
+
+    <label for="days">Periode (dagen):</label>
+    <select name="days" id="days" required>
+      {% for i in range(1, 8) %}
+      <option value="{{ i }}">{{ i }}</option>
+      {% endfor %}
+    </select>
+    <br><br>
+        <!-- onderaan in je form: -->
+    <button type="submit" name="action" value="all">Export alle data</button>
+    <button type="submit" name="action" value="decreasing">Export alleen dalers</button>
+  </form>
+</body>
+</html>
