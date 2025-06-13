@@ -5,6 +5,8 @@ from ssl import create_default_context
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import pandas as pd
+import json
+
 
 # 1. Load environment
 load_dotenv()
