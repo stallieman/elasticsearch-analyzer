@@ -1,6 +1,6 @@
 # elasticsearch-analyzer
 
-Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar CSV, met dag-over-dag analyses en markeringen. Deze tool biedt nu ook de mogelijkheid om Elasticsearch-clusters dynamisch toe te voegen en te beheren via de webinterface.
+Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar CSV, met dag-over-dag analyses en markeringen. Deze tool biedt nu de mogelijkheid om Elasticsearch-clusters dynamisch toe te voegen en te beheren via de webinterface.
 
 ---
 
@@ -8,7 +8,7 @@ Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar 
 
 * `app.py`          – De Flask-applicatie met alle logica voor query, verwerking en export, inclusief het dynamisch laden en opslaan van clusterconfiguraties.
 * `templates/`      – Map met de HTML-template `index.html` voor het formulier en de functionaliteit voor het toevoegen van clusters.
-* `clusters.json`   – **NIEUW:** Dit bestand slaat de configuraties van je Elasticsearch-clusters op. Het wordt automatisch aangemaakt/bijgewerkt door de applicatie.
+* `clusters.json`   – **Lokaal bestand:** Dit bestand slaat de configuraties van je Elasticsearch-clusters op. **Het wordt automatisch aangemaakt/bijgewerkt door de applicatie en wordt NIET in Git opgeslagen (`.gitignore`).**
 * `requirements.txt`– Alle Python-dependencies.
 * `.env.example`    – Voorbeeld configuratiebestand (copy & paste naar `.env`).
 * `.gitignore`      – Bestanden en mappen die niet in Git worden opgenomen.
@@ -47,7 +47,8 @@ Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar 
         ```bash
         cp .env.example .env
         ```
-    * Open `.env` en vul in (let op: Elasticsearch cluster URL's worden nu beheerd via de UI en `clusters.json`):
+    * Open `.env` en vul je Elasticsearch-gebruikersnaam, wachtwoord en het pad naar je CA-certificaat in.
+      Let op: Elasticsearch cluster URLs worden beheerd via de applicatie-UI en opgeslagen in `clusters.json`.
 
         ```dotenv
         ES_USER=jouw_gebruikersnaam
@@ -75,9 +76,10 @@ Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar 
 6.  **Gebruik**
 
     * Open in je browser `http://127.0.0.1:5000/`.
-    * **Clusters Beheren:**
-        * Onderaan de pagina vind je een formulier om **nieuwe Elasticsearch clusters toe te voegen**. Voer een **Naam** (bijv. `Dev Cluster`) en de volledige **URL** (bijv. `https://your-dev-es:9243`) in.
-        * Na het toevoegen verschijnt het cluster direct in de dropdown-lijst voor export. De configuraties worden opgeslagen in `clusters.json`.
+    * **Clusters Beheren (Eerste keer):**
+        * Omdat `clusters.json` niet in Git staat, begint de applicatie met een lege lijst van clusters.
+        * Gebruik het formulier "Nieuw Cluster Toevoegen" onderaan de pagina om je Elasticsearch clusters te configureren. Voer een **Naam** (bijv. `Productie Cluster`) en de volledige **URL** (bijv. `https://your-prod-es:9243`) in.
+        * Na het toevoegen verschijnt het cluster direct in de dropdown-lijst voor export. De configuraties worden lokaal opgeslagen in `clusters.json`.
     * **Data Exporteren:**
         * Kies het gewenste cluster uit de dropdown.
         * Vul het index-patroon (bijv. `desktop_servers-*`), de veldnaam voor aggregatie (bijv. `machine.name`) en het aantal dagen (1–7) in.
@@ -87,7 +89,7 @@ Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar 
 
 7.  **CSV openen in Excel**
 
-    * Importeer als UTF-8 CSV ([Power Query of Legacy-wizard](https://support.microsoft.com/nl-nl/office/tekstbestanden-importeren-of-exporteren-tekst-of-csv-bestanden-importeren-of-exporteren-5250ee63-3982-4113-d49e-d7f999999999) - *URL is een voorbeeld, pas deze aan naar een relevante Microsoft/Office support pagina als je die hebt*).
+    * Importeer als UTF-8 CSV ([Power Query of Legacy-wizard](https://support.microsoft.com/nl-nl/office/tekstbestanden-importeren-of-exporteren-tekst-of-csv-bestanden-importeren-of-exporteren-5250ee63-3982-4113-d49e-d7f999999999)).
     * De kolomkoppen zijn de datums in `YYYY-MM-DD` formaat.
 
 ---

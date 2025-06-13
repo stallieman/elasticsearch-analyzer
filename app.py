@@ -18,31 +18,29 @@ ES_PASS = os.getenv("ES_MAN")
 # 2. Constante voor het JSON-bestand
 CLUSTER_FILE = "clusters.json"
 
-# 3. Functie om clusters te laden
+# 3. Functie om clusters te laden - AANGEPAST VOOR LEGE START
 def load_clusters() -> dict:
-    """Laadt clusterconfiguraties uit een JSON-bestand, of initialiseert met standaardwaarden."""
+    """
+    Laadt clusterconfiguraties uit een JSON-bestand.
+    Start met lege clusters als het bestand niet bestaat of leeg/corrupt is.
+    """
     if os.path.exists(CLUSTER_FILE):
         try:
             with open(CLUSTER_FILE, 'r') as f:
-                return json.load(f)
+                content = f.read().strip()
+                if not content: # Controleer of het bestand leeg is
+                    print(f"DEBUG: {CLUSTER_FILE} bestaat maar is leeg. Start met lege clusters.")
+                    return {} # Retourneer een lege dict als bestand leeg is
+                return json.loads(content)
         except json.JSONDecodeError:
-            print(f"WAARSCHUWING: Fout bij het lezen van {CLUSTER_FILE}. Bestand is corrupt. Initialiseer met standaardclusters.")
-            # Val terug op standaardclusters als het bestand corrupt is
-            return {
-                "apps": "https://prd-appsanddesktops-es.central.wpol.nl:9243",
-                "backbone": "https://prd-backbone-es.central.wpol.nl:9243",
-                "prd historical": "https://prd-historical-es.central.wpol.nl:9243",
-            }
-    # Als het bestand niet bestaat, retourneer de standaardclusters en sla ze op
-    initial_clusters = {
-        "apps": "https://prd-appsanddesktops-es.central.wpol.nl:9243",
-        "backbone": "https://prd-backbone-es.central.wpol.nl:9243",
-        "prd historical": "https://prd-historical-es.central.wpol.nl:9243",
-    }
-    save_clusters(initial_clusters) # Sla de initiële clusters op in het bestand
-    return initial_clusters
+            print(f"WAARSCHUWING: Fout bij het lezen van {CLUSTER_FILE}. Bestand is corrupt of ongeldig JSON. Start met lege clusters.")
+            return {} # Retourneer een lege dict als bestand corrupt is
+    # Als het bestand niet bestaat, retourneer een lege dictionary.
+    # Het bestand wordt aangemaakt zodra het eerste cluster wordt toegevoegd.
+    print(f"DEBUG: {CLUSTER_FILE} niet gevonden. Start met lege clusters.")
+    return {}
 
-# 4. Functie om clusters op te slaan
+# 4. Functie om clusters op te slaan (ongewijzigd)
 def save_clusters(clusters_dict: dict):
     """Slaat clusterconfiguraties op naar een JSON-bestand."""
     with open(CLUSTER_FILE, 'w') as f:
@@ -58,7 +56,7 @@ def es_connect(url: str) -> Elasticsearch:
     ctx = create_default_context(cafile=CA_PATH)
     return Elasticsearch(
         [url],
-        basic_auth=(ES_USER, ES_PASS),
+        basic_auth=(os.getenv("ES_USER"), os.getenv("ES_MAN")), # Gebruik os.getenv hier
         ssl_context=ctx,
     )
 
@@ -79,7 +77,7 @@ def home():
         default_index=os.getenv("INDEX_PAT"),
     )
 
-# 9. Nieuwe route voor het toevoegen van clusters
+# 9. Nieuwe route voor het toevoegen van clusters (ongewijzigd)
 @app.route("/add_cluster", methods=["POST"])
 def add_cluster():
     cluster_name = request.form["cluster_name"].strip()
@@ -104,7 +102,7 @@ def add_cluster():
     return redirect(url_for('home', message=f"Cluster '{cluster_name}' succesvol toegevoegd!", status="success"))
 
 
-# 10. Export-route (ongeijzigd van vorige iteratie)
+# 10. Export-route (ongewijzigd van vorige iteratie)
 @app.route("/export", methods=["POST"])
 def export():
     # a) Form-waarden inlezen
@@ -128,12 +126,14 @@ def export():
     # b) Verbinden met het gekozen cluster
     es = es_connect(CLUSTERS[cluster_key])
 
-    # c) Datum-bereik bepalen - AANGEPAST: MEEST RECENTE DAG IS GISTEREN
+    # c) Datum-bereik bepalen - MEEST RECENTE DAG IS GISTEREN (ongewijzigd)
     # Bepaal de datum van gisteren in UTC
     yesterday_utc_date = (datetime.utcnow() - timedelta(days=1)).date()
 
-    # Bepaal het einde van gisteren in UTC (23:59:59.999999 van gisteren)
-    end = datetime.combine(yesterday_utc_date, time.max).replace(microsecond=999999)
+    # Bepaal het einde van gisteren in UTC (23:59:59.999959 van gisteren)
+    # Gebruik een iets kleinere microsecondenwaarde om afrondingsproblemen te voorkomen,
+    # aangezien 999999 soms naar de volgende dag kan afronden in sommige systemen.
+    end = datetime.combine(yesterday_utc_date, time.max).replace(microsecond=999959)
 
     # Bepaal de startdatum door 'days - 1' dagen terug te gaan vanaf gisteren
     start_date_for_query = yesterday_utc_date - timedelta(days=days - 1)
@@ -145,7 +145,7 @@ def export():
     print(f"DEBUG: Datum van gisteren (UTC): {yesterday_utc_date}")
     print(f"DEBUG: Berekend querybereik (UTC): GTE {start.isoformat()} | LTE {end.isoformat()}")
 
-    # d) Aggregatie-body opbouwen
+    # d) Aggregatie-body opbouwen (ongewijzigd)
     body = {
         "size": 0,
         "query": {
@@ -171,7 +171,7 @@ def export():
         },
     }
 
-    # e) Query uitvoeren
+    # e) Query uitvoeren (ongewijzigd)
     res = es.search(index=index_pat, body=body)
 
     # --- DEBUGGING EN FOUTCONTROLE AANPASSINGEN ---
@@ -184,7 +184,7 @@ def export():
         print(f"Raw respons (geen JSON, wellicht afgekort): {str(res.body)[:500]}...") # Print als string
     print("--------------------------------------------------")
 
-    # Controleer of aggregaties terugkwamen
+    # Controleer of aggregaties terugkwamen (ongewijzigd)
     if "aggregations" not in res.body:
         return Response(
             "❗ Geen aggregaties gevonden. Controleer of het index-patroon en de veldnaam correct zijn én er data is in de gekozen periode.",
@@ -192,7 +192,7 @@ def export():
             status=400,
         )
 
-    # Controleer of de 'by_field' aggregatie en de 'buckets' erin bestaan en gevuld zijn
+    # Controleer of de 'by_field' aggregatie en de 'buckets' erin bestaan en gevuld zijn (ongewijzigd)
     if "by_field" not in res.body["aggregations"] or \
        "buckets" not in res.body["aggregations"]["by_field"] or \
        not res.body["aggregations"]["by_field"]["buckets"]:
@@ -203,7 +203,7 @@ def export():
             status=400,
         )
 
-    # f) Data omzetten naar DataFrame
+    # f) Data omzetten naar DataFrame (ongewijzigd)
     dates_for_columns = [(start.date() + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
     records = []
     
@@ -239,7 +239,7 @@ def export():
     df_numeric = pd.DataFrame.from_records(records).set_index("field")
     df_numeric = df_numeric.reindex(columns=dates_for_columns, fill_value=0)
 
-    # g) Bereken verschillen en maak display-versie met “↓”-markering
+    # g) Bereken verschillen en maak display-versie met “↓”-markering (ongewijzigd)
     diff = df_numeric.diff(axis=1)
     df_display = df_numeric.astype(str)
     for col in dates_for_columns[1:]:
@@ -247,26 +247,26 @@ def export():
             lambda x: "↓" if x < 0 else ""
         )
 
-    # h) Indien “decreasing” alleen rijen met daling tonen
+    # h) Indien “decreasing” alleen rijen met daling tonen (ongewijzigd)
     if action == "decreasing":
         mask = (diff < 0).any(axis=1)
         df_display = df_display[mask]
 
-    # Reset index zodat 'field' een kolom wordt
+    # Reset index zodat 'field' een kolom wordt (ongewijzigd)
     df_display = df_display.reset_index()
 
-    # 1) Maak CSV-string zonder index
+    # 1) Maak CSV-string zonder index (ongewijzigd)
     csv_str = df_display.to_csv(index=False)
-    # 2) Voeg BOM (utf-8-sig) toe voor Excel
+    # 2) Voeg BOM (utf-8-sig) toe voor Excel (ongewijzigd)
     csv_bytes = csv_str.encode("utf-8-sig")
 
-    # Bestandsnaam bepalen, met suffix als “decreasing” gekozen is
+    # Bestandsnaam bepalen, met suffix als “decreasing” gekozen is (ongewijzigd)
     filename = f"export_{field_name}_{days}d"
     if action == "decreasing":
         filename += "_decreasing"
     filename += ".csv"
 
-    # Returnen als attachment met juiste headers
+    # Returnen als attachment met juiste headers (ongewijzigd)
     return Response(
         csv_bytes,
         mimetype="text/csv; charset=utf-8",
@@ -274,6 +274,6 @@ def export():
     )
 
 
-# 11. App-runner
+# 11. App-runner (ongewijzigd)
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True) # Zet debug=True voor ontwikkeling

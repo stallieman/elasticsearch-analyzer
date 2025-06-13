@@ -7,3 +7,6 @@ __pycache__/
 
 # Omgevingsbestand met wachtwoorden
 .env
+
+# Lokale cluster configuratie
+clusters.json
