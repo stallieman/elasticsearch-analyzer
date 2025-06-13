@@ -52,7 +52,7 @@ Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar 
      ES_USER= jouw_gebruikersnaam
      ES_MAN=  jouw_wachtwoord
      CA_PATH= pad/naar/rootca.man.wpol.nl.cer
-     INDEX_PAT= jouw-index-patroon (bijv. chocoinstallations-*)
+     INDEX_PAT= index pattern (bijv. indexnaam-*)
      ```
 
 5. **Runnen**
