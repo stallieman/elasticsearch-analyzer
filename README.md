@@ -52,10 +52,17 @@ Een eenvoudige Flask-webapplicatie om data uit Elasticsearch te exporteren naar 
      ES_USER= jouw_gebruikersnaam
      ES_MAN=  jouw_wachtwoord
      CA_PATH= pad/naar/rootca.man.wpol.nl.cer
-     INDEX_PAT= index pattern (bijv. indexnaam-*)
+     ```
+   * **Op macOS (zsh):** voeg deze variabelen toe aan `~/.zshrc` en laad het opnieuw:
+
+     ```bash
+     echo 'export ES_USER="jouw_gebruikersnaam"' >> ~/.zshrc
+     echo 'export ES_MAN="jouw_wachtwoord"' >> ~/.zshrc
+     echo 'export CA_PATH="/pad/naar/rootca.man.wpol.nl.cer"' >> ~/.zshrc
+     source ~/.zshrc
      ```
 
-5. **Runnen**
+5. **Runnen** **Runnen** **Runnen**
 
    ```bash
    # Optioneel: debug mode
