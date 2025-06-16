@@ -16,7 +16,9 @@ ES_PASS = os.getenv("ES_MAN")
 
 # --- NIEUWE CLUSTER BEHEER LOGICA ---
 # 2. Constante voor het JSON-bestand
-CLUSTER_FILE = "clusters.json"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CLUSTER_FILE = os.path.join(BASE_DIR, "clusters.json")
 
 # 3. Functie om clusters te laden - AANGEPAST VOOR LEGE START
 def load_clusters() -> dict:
