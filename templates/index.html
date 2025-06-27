@@ -3,36 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elasticsearch Aggregatie Export</title>
+    <title>Elasticsearch Aggregatie Export Tool</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        form { margin-bottom: 30px; padding: 25px; border: 1px solid #ddd; border-radius: 8px; max-width: 500px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        form { margin-bottom: 30px; padding: 25px; border: 1px solid #ddd; border-radius: 8px;
+               max-width: 500px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
         input[type="text"], input[type="number"], select {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
+            width: calc(100% - 22px); padding: 10px; margin-bottom: 15px;
+            border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
             font-size: 14px;
         }
         input[type="submit"] {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+            background-color: #007bff; color: white; padding: 12px 20px;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
             transition: background-color 0.3s ease;
         }
-        input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        .error-message { color: #dc3545; font-weight: bold; margin-bottom: 10px; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; }
-        .success-message { color: #28a745; font-weight: bold; margin-bottom: 10px; padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; }
-        h1, h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+        input[type="submit"]:hover { background-color: #0056b3; }
+        .error-message { color: #dc3545; font-weight: bold; margin-bottom: 10px;
+                          padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb;
+                          border-radius: 4px; }
+        .success-message { color: #28a745; font-weight: bold; margin-bottom: 10px;
+                            padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb;
+                            border-radius: 4px; }
+        h1, h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;
+                 margin-bottom: 20px; }
         hr { border: 0; height: 1px; background: #eee; margin: 30px 0; }
     </style>
 </head>
@@ -41,31 +36,34 @@
 
     <div id="messages"></div>
 
-    <form id="exportForm" action="/export" method="post">
+    <form action="/export" method="post">
         <h2>Data Exporteren</h2>
+
         <label for="cluster">Kies Cluster:</label>
         <select id="cluster" name="cluster" required>
             {% for key, value in clusters.items() %}
                 <option value="{{ key }}">{{ key }} ({{ value }})</option>
             {% endfor %}
-        </select><br>
+        </select>
 
         <label for="index_pat">Index Pattern (bijv. desktop_servers-*):</label>
-        <input type="text" id="index_pat" name="index_pat" value="{{ default_index }}" required><br>
+        <input type="text" id="index_pat" name="index_pat" value="{{ default_index }}" required>
 
-        <label for="field_name">Veldnaam voor Aggregatie (bijv. machine.name):</label>
-        <input type="text" id="field_name" name="field_name" value="machine.name" required><br>
+        <label for="field_name">Aggregatie-veld (keyword, verplicht):</label>
+        <input type="text" id="field_name" name="field_name" value="machine.name" required>
+
+        <label for="filter_field">Filterveld (optioneel, elk veld):</label>
+        <input type="text" id="filter_field" name="filter_field" placeholder="bijv. environment.hostname">
+
+        <label for="filter_pattern">Filterpatroon (optioneel, wildcard * / ?, of term exact):</label>
+        <input type="text" id="filter_pattern" name="filter_pattern" placeholder="bijv. *prod* of us-east-1">
 
         <label for="days">Aantal Dagen (1-7):</label>
-        <input type="number" id="days" name="days" value="2" min="1" max="7" required><br>
+        <input type="number" id="days" name="days" value="2" min="1" max="7" required>
 
         <div>
-            <label for="action_all">
-                <input type="radio" id="action_all" name="action" value="all" checked> Alle data
-            </label><br>
-            <label for="action_decreasing">
-                <input type="radio" id="action_decreasing" name="action" value="decreasing"> Alleen dalers (↓)
-            </label>
+            <label><input type="radio" name="action" value="all" checked> Alle data</label><br>
+            <label><input type="radio" name="action" value="decreasing"> Alleen dalers (↓)</label>
         </div><br>
 
         <input type="submit" value="Exporteer als CSV">
@@ -75,56 +73,38 @@
 
     <form id="addClusterForm" action="/add_cluster" method="post">
         <h2>Nieuw Cluster Toevoegen</h2>
-        <label for="new_cluster_name">Nieuwe Cluster Naam:</label>
-        <input type="text" id="new_cluster_name" name="cluster_name" required><br>
-
-        <label for="new_cluster_url">Nieuwe Cluster URL:</label>
-        <input type="text" id="new_cluster_url" name="cluster_url" placeholder="https://your-cluster-url:9243" required><br>
-
+        <label for="new_cluster_name">Cluster Naam:</label>
+        <input type="text" id="new_cluster_name" name="cluster_name" required>
+        <label for="new_cluster_url">Cluster URL:</label>
+        <input type="text" id="new_cluster_url" name="cluster_url"
+               placeholder="https://your-cluster-url:9243" required>
         <input type="submit" value="Voeg Cluster Toe">
     </form>
 
     <script>
-        // JavaScript om meldingen van de server te tonen (succes/fout)
-        const messagesDiv = document.getElementById('messages');
-        const urlParams = new URLSearchParams(window.location.search);
-        const message = urlParams.get('message');
-        const status = urlParams.get('status');
-
-        if (message) {
-            messagesDiv.innerHTML = `<p class="${status}-message">${decodeURIComponent(message)}</p>`;
-            // Melding na een paar seconden laten verdwijnen
+        const msgDiv = document.getElementById('messages');
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('message')) {
+            msgDiv.innerHTML = `<p class="${params.get('status')}-message">${
+                decodeURIComponent(params.get('message'))
+            }</p>`;
             setTimeout(() => {
-                messagesDiv.innerHTML = '';
-                // Optioneel: URL-parameters verwijderen na het tonen van de melding
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                window.history.replaceState({ path: newUrl }, '', newUrl);
+                history.replaceState(null, '', location.pathname);
+                msgDiv.innerHTML = '';
             }, 5000);
         }
 
-        // Intercept de 'addClusterForm' submit om Ajax te gebruiken
-        // Dit is beter voor het tonen van foutmeldingen zonder redirect
-        document.getElementById('addClusterForm').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Voorkom de standaard formulier-submit
-
-            const formData = new FormData(this);
-            try {
-                const response = await fetch(this.action, {
-                    method: this.method,
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorMessage = await response.text(); // Haal de fouttekst op
-                    messagesDiv.innerHTML = `<p class="error-message">Fout: ${errorMessage}</p>`;
-                } else {
-                    // Bij succes, redirect naar de homepage om de clusterlijst te verversen
-                    // en een succesmelding te tonen via URL parameters
-                    window.location.href = '/?message=' + encodeURIComponent('Cluster succesvol toegevoegd!') + '&status=success';
-                }
-            } catch (error) {
-                // Afhandeling van netwerkfouten (bijv. server niet bereikbaar)
-                messagesDiv.innerHTML = `<p class="error-message">Netwerkfout: ${error.message}</p>`;
+        document.getElementById('addClusterForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const res = await fetch(e.target.action, {
+                method: 'POST',
+                body: new FormData(e.target)
+            });
+            if (res.ok) {
+                window.location = '/?message=' + encodeURIComponent('Cluster toegevoegd!') + '&status=success';
+            } else {
+                const text = await res.text();
+                msgDiv.innerHTML = `<p class="error-message">${text}</p>`;
             }
         });
     </script>
