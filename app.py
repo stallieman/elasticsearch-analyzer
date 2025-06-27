@@ -1,21 +1,17 @@
-import os, json, re
+import os, json, re, threading
 from flask import (
     Flask, render_template, request, Response,
     redirect, url_for, session, flash
 )
 from elasticsearch import Elasticsearch, exceptions as es_exceptions
 from ssl import create_default_context
-from dotenv import load_dotenv
 from datetime import datetime, timedelta, time
 import pandas as pd
 
 # ─── Basisinstellingen ─────────────────────────────────────────
-load_dotenv()
-#CA_PATH       = os.getenv("CA_PATH")              # blijft uit .env komen
 CA_PATH = os.path.join(os.path.dirname(__file__), "certificate", "rootca.man.wpol.nl.cer")
-DEFAULT_INDEX = os.getenv("INDEX_PAT") or ""      # optioneel
+DEFAULT_INDEX = ""  # optioneel; .env mag maar hoeft niet
 
-# ─── cluster-beheer ────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 CLUSTER_FILE = os.path.join(BASE_DIR, "clusters.json")
 
@@ -35,15 +31,12 @@ def save_clusters(d):
 
 CLUSTERS = load_clusters()
 
-# ─── Elasticsearch connectie ───────────────────────────────────
 def es_connect(url: str) -> Elasticsearch:
     ctx = create_default_context(cafile=CA_PATH)
-    # gebruiker/wachtwoord uit de actieve sessie
     es_user = session.get("es_user")
     es_pass = session.get("es_pass")
     return Elasticsearch([url], basic_auth=(es_user, es_pass), ssl_context=ctx)
 
-# ─── Flask-app ─────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = "VERVANGDOOR_IETS_RANDOMS_EN_LANGS"
 
@@ -72,7 +65,6 @@ def logout():
 def home():
     if "es_user" not in session:
         return redirect(url_for("login"))
-
     global CLUSTERS
     CLUSTERS = load_clusters()
     return render_template(
@@ -86,18 +78,15 @@ def home():
 def add_cluster():
     if "es_user" not in session:
         return redirect(url_for("login"))
-
     name = request.form["cluster_name"].strip()
     url  = request.form["cluster_url"].strip()
     if not name or not url:
         return Response("❗ Naam en URL verplicht.", 400)
     if not url.startswith(("http://", "https://")):
         return Response("❗ URL moet met http(s) beginnen.", 400)
-
     global CLUSTERS
     if name in CLUSTERS:
         return redirect(url_for("home", message="Cluster bestaat al", status="error"))
-
     CLUSTERS[name] = url
     save_clusters(CLUSTERS)
     return redirect(url_for("home", message="Cluster toegevoegd!", status="success"))
@@ -107,7 +96,6 @@ def add_cluster():
 def export():
     if "es_user" not in session:
         return redirect(url_for("login"))
-
     cluster_key    = request.form["cluster"]
     index_pat      = request.form["index_pat"]
     agg_field      = request.form["field_name"].strip()
@@ -209,6 +197,21 @@ def export():
         mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename={fn}"}
     )
+
+# --------------------- SHUTDOWN ENDPOINT -------------------------------
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Niet via werkzeug!')
+    func()
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    if "es_user" not in session:
+        return redirect(url_for("login"))
+    # Voor de zekerheid: alleen shutdown na bevestiging via GUI
+    threading.Thread(target=shutdown_server).start()
+    return render_template("shutdown.html")
 
 # --------------------- MAIN -------------------------------
 if __name__ == "__main__":

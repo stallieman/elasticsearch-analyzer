@@ -14,12 +14,13 @@
             border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
             font-size: 14px;
         }
-        input[type="submit"] {
+        input[type="submit"], button {
             background-color: #007bff; color: white; padding: 12px 20px;
             border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
             transition: background-color 0.3s ease;
+            margin-top: 10px;
         }
-        input[type="submit"]:hover { background-color: #0056b3; }
+        input[type="submit"]:hover, button:hover { background-color: #0056b3; }
         .error-message { color: #dc3545; font-weight: bold; margin-bottom: 10px;
                           padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb;
                           border-radius: 4px; }
@@ -31,6 +32,11 @@
         hr { border: 0; height: 1px; background: #eee; margin: 30px 0; }
         .logout { float: right; }
         .clear { clear: both; }
+        .shutdown {
+            display: inline-block; float: right; margin-left: 10px; background: #dc3545;
+            border: none; color: white; font-weight: bold; padding: 10px 16px; border-radius: 5px;
+        }
+        .shutdown:hover { background: #b52b37; }
     </style>
 </head>
 <body>
@@ -38,6 +44,9 @@
     <div class="logout">
         Ingelogd als <b>{{ session.get("es_user") }}</b> |
         <a href="{{ url_for('logout') }}">Uitloggen</a>
+        <form action="{{ url_for('shutdown') }}" method="post" style="display:inline;">
+            <button type="submit" class="shutdown" onclick="return confirm('Weet je zeker dat je de tool wilt afsluiten?')">Afsluiten</button>
+        </form>
     </div>
     {% endif %}
     <div class="clear"></div>
@@ -97,7 +106,6 @@
     </form>
 
     <script>
-        // AJAX voor cluster toevoegen met foutafhandeling
         document.getElementById('addClusterForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const msgDiv = document.createElement('div');
