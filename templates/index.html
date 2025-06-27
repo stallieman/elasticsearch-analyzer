@@ -30,26 +30,48 @@
         h1, h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;
                  margin-bottom: 20px; }
         hr { border: 0; height: 1px; background: #eee; margin: 30px 0; }
-        .logout { float: right; }
-        .clear { clear: both; }
+
+        /* Userbar verbeterd met flexbox */
+        .userbar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .logoutlink {
+            color: #007bff;
+            text-decoration: underline;
+            margin-right: 8px;
+        }
+        .logoutlink:hover { color: #0056b3; }
+        .shutdownform { display: inline; margin: 0; padding: 0; }
         .shutdown {
-            display: inline-block; float: right; margin-left: 10px; background: #dc3545;
-            border: none; color: white; font-weight: bold; padding: 10px 16px; border-radius: 5px;
+            display: inline-block;
+            margin: 0;
+            background: #dc3545;
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 10px 16px;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background 0.2s;
         }
         .shutdown:hover { background: #b52b37; }
     </style>
 </head>
 <body>
     {% if session.get("es_user") %}
-    <div class="logout">
+    <div class="userbar">
         Ingelogd als <b>{{ session.get("es_user") }}</b> |
-        <a href="{{ url_for('logout') }}">Uitloggen</a>
-        <form action="{{ url_for('shutdown') }}" method="post" style="display:inline;">
-            <button type="submit" class="shutdown" onclick="return confirm('Weet je zeker dat je de tool wilt afsluiten?')">Afsluiten</button>
+        <a href="{{ url_for('logout') }}" class="logoutlink">Uitloggen</a>
+        <form action="{{ url_for('shutdown') }}" method="post" class="shutdownform" onsubmit="return confirm('Weet je zeker dat je de tool wilt afsluiten?')">
+            <button type="submit" class="shutdown">Afsluiten</button>
         </form>
     </div>
     {% endif %}
-    <div class="clear"></div>
+
     <h1>Elasticsearch Aggregatie Export Tool</h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
