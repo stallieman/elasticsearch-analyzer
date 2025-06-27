@@ -26,7 +26,7 @@ def load_clusters():
         text = open(CLUSTER_FILE).read().strip()
         return json.loads(text) if text else {}
     except json.JSONDecodeError:
-        print("⚠️ clusters.json is corrupt; starting empty")
+        print("clusters.json is corrupt; starting empty")
         return {}
 
 def save_clusters(data):
