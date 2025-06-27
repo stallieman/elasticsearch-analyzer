@@ -29,12 +29,27 @@
         h1, h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;
                  margin-bottom: 20px; }
         hr { border: 0; height: 1px; background: #eee; margin: 30px 0; }
+        .logout { float: right; }
+        .clear { clear: both; }
     </style>
 </head>
 <body>
+    {% if session.get("es_user") %}
+    <div class="logout">
+        Ingelogd als <b>{{ session.get("es_user") }}</b> |
+        <a href="{{ url_for('logout') }}">Uitloggen</a>
+    </div>
+    {% endif %}
+    <div class="clear"></div>
     <h1>Elasticsearch Aggregatie Export Tool</h1>
 
-    <div id="messages"></div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="{{cat}}-message">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <form action="/export" method="post">
         <h2>Data Exporteren</h2>
@@ -82,29 +97,22 @@
     </form>
 
     <script>
-        const msgDiv = document.getElementById('messages');
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('message')) {
-            msgDiv.innerHTML = `<p class="${params.get('status')}-message">${
-                decodeURIComponent(params.get('message'))
-            }</p>`;
-            setTimeout(() => {
-                history.replaceState(null, '', location.pathname);
-                msgDiv.innerHTML = '';
-            }, 5000);
-        }
-
-        document.getElementById('addClusterForm').addEventListener('submit', async e => {
+        // AJAX voor cluster toevoegen met foutafhandeling
+        document.getElementById('addClusterForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const res = await fetch(e.target.action, {
+            const msgDiv = document.createElement('div');
+            const res = await fetch(this.action, {
                 method: 'POST',
-                body: new FormData(e.target)
+                body: new FormData(this)
             });
             if (res.ok) {
                 window.location = '/?message=' + encodeURIComponent('Cluster toegevoegd!') + '&status=success';
             } else {
                 const text = await res.text();
-                msgDiv.innerHTML = `<p class="error-message">${text}</p>`;
+                msgDiv.className = "error-message";
+                msgDiv.textContent = text;
+                this.parentNode.insertBefore(msgDiv, this);
+                setTimeout(() => msgDiv.remove(), 5000);
             }
         });
     </script>
