@@ -11,7 +11,8 @@ import pandas as pd
 
 # ─── Basisinstellingen ─────────────────────────────────────────
 load_dotenv()
-CA_PATH       = os.getenv("CA_PATH")              # blijft uit .env komen
+#CA_PATH       = os.getenv("CA_PATH")              # blijft uit .env komen
+CA_PATH = os.path.join(os.path.dirname(__file__), "certificate", "rootca.cer")
 DEFAULT_INDEX = os.getenv("INDEX_PAT") or ""      # optioneel
 
 # ─── cluster-beheer ────────────────────────────────────────────
