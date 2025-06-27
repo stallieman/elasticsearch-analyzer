@@ -1,4 +1,4 @@
-import os, json, re, threading
+import os, json, re
 from flask import (
     Flask, render_template, request, Response,
     redirect, url_for, session, flash
@@ -201,16 +201,16 @@ def export():
 # --------------------- SHUTDOWN ENDPOINT -------------------------------
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Niet via werkzeug!')
-    func()
+    if func is not None:
+        func()
+    else:
+        print('⚠️  Werkzeug shutdown niet gevonden; mogelijk al afgesloten.')
 
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
     if "es_user" not in session:
         return redirect(url_for("login"))
-    # Voor de zekerheid: alleen shutdown na bevestiging via GUI
-    threading.Thread(target=shutdown_server).start()
+    shutdown_server()
     return render_template("shutdown.html")
 
 # --------------------- MAIN -------------------------------
