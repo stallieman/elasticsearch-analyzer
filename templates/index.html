@@ -31,7 +31,6 @@
                  margin-bottom: 20px; }
         hr { border: 0; height: 1px; background: #eee; margin: 30px 0; }
 
-        /* Userbar verbeterd met flexbox */
         .userbar {
             display: flex;
             align-items: center;
@@ -59,6 +58,13 @@
             transition: background 0.2s;
         }
         .shutdown:hover { background: #b52b37; }
+        .clusters-list { margin-bottom: 15px; }
+        .delete-btn {
+            background: #dc3545;
+            margin-left: 8px;
+            font-size: 12px;
+            padding: 4px 8px;
+        }
     </style>
 </head>
 <body>
@@ -116,6 +122,17 @@
     </form>
 
     <hr>
+    <div class="clusters-list">
+      <h2>Bestaande Clusters</h2>
+      <ul id="clustersList">
+        {% for key, value in clusters.items() %}
+          <li>
+            <b>{{ key }}</b>: {{ value }}
+            <button class="delete-btn" data-name="{{ key }}">Verwijder</button>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
 
     <form id="addClusterForm" action="/add_cluster" method="post">
         <h2>Nieuw Cluster Toevoegen</h2>
@@ -128,6 +145,7 @@
     </form>
 
     <script>
+        // Toevoegen van een cluster (AJAX)
         document.getElementById('addClusterForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const msgDiv = document.createElement('div');
@@ -136,7 +154,7 @@
                 body: new FormData(this)
             });
             if (res.ok) {
-                window.location = '/?message=' + encodeURIComponent('Cluster toegevoegd!') + '&status=success';
+                location.reload();
             } else {
                 const text = await res.text();
                 msgDiv.className = "error-message";
@@ -144,6 +162,19 @@
                 this.parentNode.insertBefore(msgDiv, this);
                 setTimeout(() => msgDiv.remove(), 5000);
             }
+        });
+
+        // Verwijderen van een cluster (AJAX)
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const naam = this.dataset.name;
+                if (!confirm("Weet je zeker dat je cluster '" + naam + "' wilt verwijderen?")) return;
+                const formData = new FormData();
+                formData.append("cluster_name", naam);
+                const res = await fetch("/delete_cluster", { method: "POST", body: formData });
+                if (res.ok) location.reload();
+                else alert(await res.text());
+            });
         });
     </script>
 </body>

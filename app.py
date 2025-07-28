@@ -1,17 +1,15 @@
 import os, json, re
 from flask import (
     Flask, render_template, request, Response,
-    redirect, url_for, session, flash
+    redirect, url_for, session, flash, jsonify
 )
 from elasticsearch import Elasticsearch, exceptions as es_exceptions
 from ssl import create_default_context
 from datetime import datetime, timedelta, time
 import pandas as pd
 
-# ─── Basisinstellingen ─────────────────────────────────────────
 CA_PATH = os.path.join(os.path.dirname(__file__), "certificate", "rootca.man.wpol.nl.cer")
-DEFAULT_INDEX = ""  # optioneel; .env mag maar hoeft niet
-
+DEFAULT_INDEX = ""
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 CLUSTER_FILE = os.path.join(BASE_DIR, "clusters.json")
 
@@ -40,7 +38,6 @@ def es_connect(url: str) -> Elasticsearch:
 app = Flask(__name__)
 app.secret_key = "VERVANGDOOR_IETS_RANDOMS_EN_LANGS"
 
-# ----------------------- LOGIN -------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -60,7 +57,6 @@ def logout():
     flash("Je bent uitgelogd.", "success")
     return redirect(url_for("login"))
 
-# ----------------------- HOME -------------------------------
 @app.route("/", methods=["GET"])
 def home():
     if "es_user" not in session:
@@ -73,7 +69,6 @@ def home():
         default_index=DEFAULT_INDEX
     )
 
-# ------------------- CLUSTER TOEVOEGEN ----------------------
 @app.route("/add_cluster", methods=["POST"])
 def add_cluster():
     if "es_user" not in session:
@@ -86,12 +81,24 @@ def add_cluster():
         return Response("❗ URL moet met http(s) beginnen.", 400)
     global CLUSTERS
     if name in CLUSTERS:
-        return redirect(url_for("home", message="Cluster bestaat al", status="error"))
+        return Response("❗ Cluster bestaat al.", 400)
     CLUSTERS[name] = url
     save_clusters(CLUSTERS)
-    return redirect(url_for("home", message="Cluster toegevoegd!", status="success"))
+    return jsonify({"status": "success"})
 
-# --------------------- EXPORT -------------------------------
+@app.route("/delete_cluster", methods=["POST"])
+def delete_cluster():
+    if "es_user" not in session:
+        return redirect(url_for("login"))
+    name = request.form["cluster_name"].strip()
+    global CLUSTERS
+    CLUSTERS = load_clusters()
+    if name not in CLUSTERS:
+        return Response("❗ Cluster niet gevonden.", 404)
+    del CLUSTERS[name]
+    save_clusters(CLUSTERS)
+    return jsonify({"status": "success"})
+
 @app.route("/export", methods=["POST"])
 def export():
     if "es_user" not in session:
@@ -118,7 +125,6 @@ def export():
 
     es = es_connect(CLUSTERS[cluster_key])
 
-    # Tijdsrange
     yest = (datetime.utcnow() - timedelta(days=1)).date()
     start_dt = datetime.combine(yest - timedelta(days=days - 1), time.min)
     end_dt   = datetime.combine(yest, time.max).replace(microsecond=999959)
@@ -198,7 +204,6 @@ def export():
         headers={"Content-Disposition": f"attachment; filename={fn}"}
     )
 
-# --------------------- SHUTDOWN ENDPOINT -------------------------------
 def shutdown_server():
     func = request.environ.get('werkzeug.server.shutdown')
     if func is not None:
@@ -213,6 +218,5 @@ def shutdown():
     shutdown_server()
     return render_template("shutdown.html")
 
-# --------------------- MAIN -------------------------------
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
